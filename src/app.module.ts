@@ -5,9 +5,11 @@ import { StreamingModule } from './resolvers/streaming/streaming.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { GraphQLError, GraphQLFormattedError } from 'graphql';
 import { ConfigModule } from '@nestjs/config';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }),
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
     GraphQLModule.forRootAsync({
       useFactory: () => ({
         path: '/graphql',
@@ -34,7 +36,10 @@ import { ConfigModule } from '@nestjs/config';
           return graphQLFormattedError;
         },
       }),
-    }),StreamingModule],
+    }),
+    StreamingModule,
+    AuthModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

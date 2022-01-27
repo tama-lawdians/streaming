@@ -1,11 +1,20 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-generator client {
-  provider = "prisma-client-js"
-}
-
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["interactiveTransactions"]
+}
+
+model Policy {
+  id        Int      @id @default(autoincrement())
+  title     String   @unique
+  contents  String   @db.Text // db.Text : 글자 수 제한 없음
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 }

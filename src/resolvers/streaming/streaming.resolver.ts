@@ -1,5 +1,4 @@
 import { Resolver, Query } from '@nestjs/graphql';
-import { PrismaClient } from '@prisma/client';
 import { StreamingService } from './streaming.service';
 
 @Resolver()

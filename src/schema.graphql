@@ -4,4 +4,5 @@
 
 type Query {
   sayHi: String!
+  getAgoraToken: Boolean!
 }
