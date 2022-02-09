@@ -2,6 +2,14 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type CreateLiveStreamingOutput {
+  id: String!
+  name: String!
+  player_hls_playback_url: String!
+  created_at: String!
+  updated_at: String!
+}
+
 type GetAllLiveStreamingOutput {
   liveStreams: [LiveStreams!]!
   totalCount: Float!
@@ -35,5 +43,6 @@ type Query {
 }
 
 type Mutation {
+  createLiveStreaming(name: String!): CreateLiveStreamingOutput!
   updateLiveStreamingById(streamId: String!, name: String!): UpdateLiveStreamingByIdOutput!
 }

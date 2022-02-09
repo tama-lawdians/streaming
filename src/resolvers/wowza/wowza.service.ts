@@ -1,6 +1,7 @@
 import { HttpService } from '@nestjs/axios';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import * as crypto from 'crypto';
+import { CreateLiveStreamingArgs } from './args/create-live-streaming.args';
 import { GetLiveStreamingByIdArgs } from './args/get-live-streaming-by-id.args';
 import { UpdateLiveStreamingByIdArgs } from './args/update-live-streaming-by-id.args';
 
@@ -8,7 +9,7 @@ import { UpdateLiveStreamingByIdArgs } from './args/update-live-streaming-by-id.
 export class WowzaService {
   constructor(private httpService: HttpService) {}
 
-  async createLiveStreaming() {
+  async createLiveStreaming({ name }: CreateLiveStreamingArgs) {
     try {
       const hostname = 'api.cloud.wowza.com';
       const path = '/api/v1.7/live_streams';
@@ -34,12 +35,32 @@ export class WowzaService {
 
       // Set request parameters
       const { data } = await this.httpService
-        .post(url, {
-          headers,
-        })
+        .post(
+          url,
+          {
+            live_stream: {
+              aspect_ratio_height: 720,
+              aspect_ratio_width: 1280,
+              billing_mode: 'pay_as_you_go',
+              broadcast_location: 'asia_pacific_s_korea',
+              encoder: 'other_webrtc',
+              name,
+              transcoder_type: 'transcoded',
+            },
+          },
+          {
+            headers,
+          },
+        )
         .toPromise();
 
-      console.log(data);
+      return {
+        id: data.live_stream.id,
+        name: data.live_stream.name,
+        player_hls_playback_url: data.live_stream.player_hls_playback_url,
+        created_at: data.live_stream.created_at,
+        updated_at: data.live_stream.updated_at,
+      };
     } catch (e) {
       throw new HttpException(
         {
