@@ -191,43 +191,7 @@ export class AuthService {
   //     );
   //   }
   // }
-  // agora http basic authentication
-  async getAgoraToken() {
-    try {
-      // HTTP basic authentication example in node.js using the RTC Server RESTful API
-      // Customer ID
-      const customerKey = '7710ed51e85b4d1bbb7e05d68b960a81';
-      // Customer secret
-      const customerSecret = '11a13033359b43809d79e0caa8b10fdf';
-      // Concatenate customer key and customer secret and use base64 to encode the concatenated string
-      const plainCredential = customerKey + ':' + customerSecret;
-      // Encode with base64
-      const encodedCredential = Buffer.from(plainCredential).toString('base64');
-      const authorizationField = 'Basic ' + encodedCredential;
 
-      // Set request parameters
-      const { data } = await this.httpService
-        .get('http://api.agora.io:443/dev/v1/projects', {
-          headers: {
-            Authorization: authorizationField,
-            'Content-Type': 'application/json',
-          },
-        })
-        .toPromise();
-
-      console.dir(data, { depth: null });
-      return true;
-    } catch (e) {
-      throw new HttpException(
-        {
-          message: e.message ? e.message : `${e}`,
-          statusCode: HttpStatus.BAD_REQUEST,
-          error: e.message ? e.message : `${e}`,
-        },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-  }
   // /* jwt 내용에 대한 결과값 */
   // async jwtValidate(payload): Promise<any> {
   //   try {

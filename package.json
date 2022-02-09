@@ -35,6 +35,8 @@
     "cache-manager": "^3.6.0",
     "cache-manager-redis-store": "^2.0.0",
     "class-validator": "^0.13.2",
+    "crc-32": "^1.2.1",
+    "cuint": "^0.2.2",
     "express": "^4.17.1",
     "graphql": "^15.8.0",
     "graphql-tools": "^8.2.0",

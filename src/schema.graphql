@@ -2,7 +2,38 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type GetAllLiveStreamingOutput {
+  liveStreams: [LiveStreams!]!
+  totalCount: Float!
+}
+
+type LiveStreams {
+  id: String!
+  name: String!
+  created_at: String!
+  updated_at: String!
+}
+
+type GetLiveStreamingByIdOutput {
+  name: String!
+  player_hls_playback_url: String!
+  created_at: String!
+  updated_at: String!
+}
+
+type UpdateLiveStreamingByIdOutput {
+  name: String!
+  player_hls_playback_url: String!
+  created_at: String!
+  updated_at: String!
+}
+
 type Query {
   sayHi: String!
-  getAgoraToken: Boolean!
+  getAllLiveStreaming: GetAllLiveStreamingOutput!
+  getLiveStreamingById(streamId: String!): GetLiveStreamingByIdOutput!
+}
+
+type Mutation {
+  updateLiveStreamingById(streamId: String!, name: String!): UpdateLiveStreamingByIdOutput!
 }

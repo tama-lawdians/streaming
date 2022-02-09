@@ -6,6 +6,7 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { GraphQLError, GraphQLFormattedError } from 'graphql';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
+import { WowzaModule } from './resolvers/wowza/wowza.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { AuthModule } from './auth/auth.module';
     }),
     StreamingModule,
     AuthModule,
+    WowzaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

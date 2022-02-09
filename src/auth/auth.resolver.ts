@@ -21,10 +21,4 @@ export class AuthResolver {
   // ): Promise<CreateUserAccessTokenOutput> {
   //   return this.authService.createAdminAccessToken(data);
   // }
-
-  // 관리자 엑세스 토큰 생성
-  @Query(() => Boolean)
-  async getAgoraToken() {
-    return this.authService.getAgoraToken();
-  }
 }
