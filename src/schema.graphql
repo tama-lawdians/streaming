@@ -2,7 +2,7 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-type CreateLiveStreamingOutput {
+type CreateLiveStreamOutput {
   id: String!
   name: String!
   player_hls_playback_url: String!
@@ -10,7 +10,11 @@ type CreateLiveStreamingOutput {
   updated_at: String!
 }
 
-type GetAllLiveStreamingOutput {
+type FetchThumbnailOutput {
+  thumbnail_url: String
+}
+
+type GetAllLiveStreamOutput {
   liveStreams: [LiveStreams!]!
   totalCount: Float!
 }
@@ -22,14 +26,14 @@ type LiveStreams {
   updated_at: String!
 }
 
-type GetLiveStreamingByIdOutput {
+type GetLiveStreamByIdOutput {
   name: String!
   player_hls_playback_url: String!
   created_at: String!
   updated_at: String!
 }
 
-type UpdateLiveStreamingByIdOutput {
+type UpdateLiveStreamByIdOutput {
   name: String!
   player_hls_playback_url: String!
   created_at: String!
@@ -38,11 +42,16 @@ type UpdateLiveStreamingByIdOutput {
 
 type Query {
   sayHi: String!
-  getAllLiveStreaming: GetAllLiveStreamingOutput!
-  getLiveStreamingById(streamId: String!): GetLiveStreamingByIdOutput!
+  getAllLiveStream: GetAllLiveStreamOutput!
+  getLiveStreamById(streamId: String!): GetLiveStreamByIdOutput!
+  fetchThumbnail(streamId: String!): FetchThumbnailOutput!
+  fetchState(streamId: String!): String!
+  fetchMetrics(streamId: String!): Boolean!
 }
 
 type Mutation {
-  createLiveStreaming(name: String!): CreateLiveStreamingOutput!
-  updateLiveStreamingById(streamId: String!, name: String!): UpdateLiveStreamingByIdOutput!
+  createLiveStream(name: String!): CreateLiveStreamOutput!
+  updateLiveStreamById(streamId: String!, name: String!): UpdateLiveStreamByIdOutput!
+  startLiveStream(streamId: String!): Boolean!
+  stopLiveStream(streamId: String!): Boolean!
 }

@@ -1,7 +1,7 @@
 import { Field, ObjectType } from '@nestjs/graphql';
 
 @ObjectType()
-export class GetAllLiveStreamingOutput {
+export class GetAllLiveStreamOutput {
   @Field(() => [LiveStreams])
   liveStreams: LiveStreams[];
 

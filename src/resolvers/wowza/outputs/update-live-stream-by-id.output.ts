@@ -1,10 +1,7 @@
 import { Field, ObjectType } from '@nestjs/graphql';
 
 @ObjectType()
-export class CreateLiveStreamingOutput {
-  @Field()
-  id: string;
-
+export class UpdateLiveStreamByIdOutput {
   @Field()
   name: string;
 
