@@ -7,6 +7,7 @@ import { GraphQLError, GraphQLFormattedError } from 'graphql';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { WowzaModule } from './resolvers/wowza/wowza.module';
+import { StreamGateway } from './gateways/stream.gateway';
 
 @Module({
   imports: [
@@ -43,6 +44,6 @@ import { WowzaModule } from './resolvers/wowza/wowza.module';
     WowzaModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, StreamGateway],
 })
 export class AppModule {}

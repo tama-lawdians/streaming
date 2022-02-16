@@ -1,7 +1,9 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { CreateLiveStreamArgs } from './args/create-live-stream.args';
+import { CreateTranscoderArgs } from './args/create-transcoder.args';
 import { StreamIdArgs } from './args/stream-id.args';
 import { UpdateLiveStreamByIdArgs } from './args/update-live-stream-by-id.args';
+import { UpdateTranscoderByIdArgs } from './args/update-transcoder-by-id.args';
 import { CreateLiveStreamOutput } from './outputs/create-live-stream.output';
 import { FetchThumbnailOutput } from './outputs/fetch-thumbnail.output';
 import { GetAllLiveStreamOutput } from './outputs/get-all-live-stream.output';
@@ -16,6 +18,11 @@ export class WowzaResolver {
   @Mutation(() => CreateLiveStreamOutput)
   createLiveStream(@Args() data: CreateLiveStreamArgs) {
     return this.wowzaService.createLiveStream(data);
+  }
+
+  @Mutation(() => Boolean)
+  createTranscoder(@Args() data: CreateTranscoderArgs) {
+    return this.wowzaService.createTranscoder(data);
   }
 
   @Query(() => GetAllLiveStreamOutput)
@@ -34,10 +41,11 @@ export class WowzaResolver {
   }
 
   @Mutation(() => Boolean)
-  startLiveStream(@Args() data: StreamIdArgs) {
-    return this.wowzaService.startLiveStream(data);
+  updateTranscoderById(@Args() data: UpdateTranscoderByIdArgs) {
+    return this.wowzaService.updateTranscoderById(data);
   }
 
+  // TODO: 방송 정지 + 삭제
   @Mutation(() => Boolean)
   stopLiveStream(@Args() data: StreamIdArgs) {
     return this.wowzaService.stopLiveStream(data);

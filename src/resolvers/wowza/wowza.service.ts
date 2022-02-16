@@ -2,8 +2,10 @@ import { HttpService } from '@nestjs/axios';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { CreateLiveStreamArgs } from './args/create-live-stream.args';
+import { CreateTranscoderArgs } from './args/create-transcoder.args';
 import { StreamIdArgs } from './args/stream-id.args';
 import { UpdateLiveStreamByIdArgs } from './args/update-live-stream-by-id.args';
+import { UpdateTranscoderByIdArgs } from './args/update-transcoder-by-id.args';
 
 @Injectable()
 export class WowzaService {
@@ -40,30 +42,23 @@ export class WowzaService {
           break;
       }
     }
-    console.log(path);
 
     const wscApiKey = process.env.WOWZA_API_KEY;
-    console.log(wscApiKey);
     const wscAccessKey = process.env.WOWZA_ACCESS_KEY;
-    console.log(wscAccessKey);
     const timestamp = Math.round(new Date().getTime() / 1000);
     const hmacData = timestamp + ':' + path + ':' + wscApiKey;
-    console.log(hmacData);
 
     const signature = crypto
       .createHmac('sha256', wscApiKey)
       .update(hmacData)
       .digest('hex');
 
-    console.log(signature);
     const headers = {
       'wsc-access-key': wscAccessKey,
       'wsc-timestamp': timestamp,
       'wsc-signature': signature,
       'Content-Type': 'application/json',
     };
-
-    console.log(headers);
 
     const url = 'https://' + hostname + path;
 
@@ -78,6 +73,64 @@ export class WowzaService {
       switch (category) {
         case 'getAllPlayerUrls':
           path = path + '/' + streamId + '/' + data;
+          break;
+        default:
+          break;
+      }
+    }
+
+    const wscApiKey = process.env.WOWZA_API_KEY;
+    const wscAccessKey = process.env.WOWZA_ACCESS_KEY;
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const hmacData = timestamp + ':' + path + ':' + wscApiKey;
+
+    const signature = crypto
+      .createHmac('sha256', wscApiKey)
+      .update(hmacData)
+      .digest('hex');
+
+    const headers = {
+      'wsc-access-key': wscAccessKey,
+      'wsc-timestamp': timestamp,
+      'wsc-signature': signature,
+      'Content-Type': 'application/json',
+    };
+
+    const url = 'https://' + hostname + path;
+
+    return { url, headers };
+  }
+
+  private setTranscoder(
+    category?: string,
+    transcoderId?: string,
+    data?: string,
+  ) {
+    const hostname = 'api.cloud.wowza.com';
+    let path = '/api/v1.7/transcoders';
+
+    if (category) {
+      switch (category) {
+        case 'getLiveStreamById':
+          path = path + '/' + transcoderId;
+          break;
+        case 'updateTranscoderById':
+          path = path + '/' + transcoderId;
+          break;
+        case 'startLiveStream':
+          path = path + '/' + transcoderId + '/' + data;
+          break;
+        case 'stopLiveStream':
+          path = path + '/' + transcoderId + '/' + data;
+          break;
+        case 'fetchThumbnail':
+          path = path + '/' + transcoderId + '/' + data;
+          break;
+        case 'fetchState':
+          path = path + '/' + transcoderId + '/' + data;
+          break;
+        case 'fetchMetrics':
+          path = path + '/' + transcoderId + '/' + data;
           break;
         default:
           break;
@@ -131,14 +184,73 @@ export class WowzaService {
         )
         .toPromise();
 
+      await this.startLiveStream({ streamId: data.live_stream.id });
+
+      while (true) {
+        const res = await this.fetchState({ streamId: data.live_stream.id });
+
+        if (res === 'started') {
+          break;
+        }
+      }
+
       return {
-        id: data.live_stream.id,
-        name: data.live_stream.name,
-        player_hls_playback_url: data.live_stream.player_hls_playback_url,
-        created_at: data.live_stream.created_at,
-        updated_at: data.live_stream.updated_at,
+        sdp_url: data.live_stream.source_connection_information.sdp_url,
+        application_name:
+          data.live_stream.source_connection_information.application_name,
+        stream_name: data.live_stream.source_connection_information.stream_name,
       };
     } catch (e) {
+      throw new HttpException(
+        {
+          message: e.message ? e.message : `${e}`,
+          statusCode: HttpStatus.BAD_REQUEST,
+          error: e.message ? e.message : `${e}`,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  async createTranscoder({ name }: CreateTranscoderArgs) {
+    try {
+      const { url, headers } = this.setTranscoder();
+
+      console.log(url);
+
+      // Set request parameters
+      const { data } = await this.httpService
+        .post(
+          url,
+          {
+            transcoder: {
+              billing_mode: 'pay_as_you_go',
+              broadcast_location: 'asia_pacific_s_korea',
+              delivery_method: 'push',
+              name,
+              protocol: 'webrtc',
+              transcoder_type: 'transcoded',
+              property: 'my value',
+            },
+          },
+          {
+            headers,
+          },
+        )
+        .toPromise();
+
+      console.log(data);
+
+      return true;
+      //   return {
+      //     id: data.live_stream.id,
+      //     name: data.live_stream.name,
+      //     player_hls_playback_url: data.live_stream.player_hls_playback_url,
+      //     created_at: data.live_stream.created_at,
+      //     updated_at: data.live_stream.updated_at,
+      //   };
+    } catch (e) {
+      console.log(e.response.data);
       throw new HttpException(
         {
           message: e.message ? e.message : `${e}`,
@@ -192,9 +304,7 @@ export class WowzaService {
         })
         .toPromise();
 
-      console.log(data);
-
-      console.log(data.live_stream.stream_target);
+      console.dir(data, { depth: null });
 
       return {
         name: data.live_stream.name,
@@ -243,6 +353,51 @@ export class WowzaService {
         updated_at: data.live_stream.updated_at,
       };
     } catch (e) {
+      throw new HttpException(
+        {
+          message: e.message ? e.message : `${e}`,
+          statusCode: HttpStatus.BAD_REQUEST,
+          error: e.message ? e.message : `${e}`,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  async updateTranscoderById({ transcoderId, name }: UpdateTranscoderByIdArgs) {
+    try {
+      const { url, headers } = this.setTranscoder(
+        'updateTranscoderById',
+        transcoderId,
+      );
+
+      // Set request parameters
+      const { data } = await this.httpService
+        .patch(
+          url,
+          {
+            transcoder: {
+              name,
+              low_latency: true,
+            },
+          },
+          {
+            headers,
+          },
+        )
+        .toPromise();
+
+      console.log(data);
+
+      return true;
+      //   return {
+      //     name: data.live_stream.name,
+      //     player_hls_playback_url: data.live_stream.player_hls_playback_url,
+      //     created_at: data.live_stream.created_at,
+      //     updated_at: data.live_stream.updated_at,
+      //   };
+    } catch (e) {
+      console.log(e.response.data);
       throw new HttpException(
         {
           message: e.message ? e.message : `${e}`,
