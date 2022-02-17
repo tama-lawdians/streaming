@@ -53,4 +53,11 @@ type Mutation {
   updateLiveStreamById(streamId: String!, name: String!): UpdateLiveStreamByIdOutput!
   updateTranscoderById(transcoderId: String!, name: String!): Boolean!
   stopLiveStream(streamId: String!): Boolean!
+  createUser(
+    """유저 ID"""
+    uid: String!
+
+    """비밀번호"""
+    password: String!
+  ): Boolean!
 }

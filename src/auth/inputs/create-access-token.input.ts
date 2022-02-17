@@ -1,12 +1,12 @@
 import { ArgsType, Field } from '@nestjs/graphql';
-import { IsEmail, IsString, Matches } from 'class-validator';
+import { IsString, Matches } from 'class-validator';
 import { regexPassword } from 'src/utils/regular-expression';
 
 @ArgsType()
 export class CreateAccessTokenInput {
   @Field()
-  @IsEmail({}, { message: '올바른 이메일을 입력하세요.' })
-  email: string;
+  @IsString()
+  uid: string;
 
   @Field()
   @IsString()

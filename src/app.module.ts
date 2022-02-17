@@ -8,6 +8,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { WowzaModule } from './resolvers/wowza/wowza.module';
 import { StreamGateway } from './gateways/stream.gateway';
+import { UserModule } from './resolvers/user/user.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { StreamGateway } from './gateways/stream.gateway';
     StreamingModule,
     AuthModule,
     WowzaModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService, StreamGateway],

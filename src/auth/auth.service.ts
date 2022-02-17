@@ -19,90 +19,117 @@ export class AuthService {
     private readonly passwordService: PasswordService,
     private readonly redisCacheService: RedisCacheService,
   ) {}
-  // // 로그인 요청 시 email, password 대조
-  // async validate(email: string, password: string, role: Role): Promise<any> {
-  //   try {
-  //     let person;
-  //     if (role === Role.ADMIN) {
-  //       person = await this.prisma.admin.findFirst({ where: { email, role } });
-  //     } else {
-  //       person = await this.prisma.user.findFirst({ where: { email, role } });
-  //     }
-  //     if (!person) {
-  //       throw Error(
-  //         `존재하지 않는 ${role === Role.ADMIN ? '관리자' : '유저'} 입니다.`,
-  //       );
-  //     }
-  //     // 입력된 비밀번호를 db의 해쉬화된 비밀번호와 대조
-  //     const compareResult = await this.passwordService.validatePassword(
-  //       password,
-  //       person.password,
-  //     );
-  //     if (!compareResult) {
-  //       throw Error('비밀번호가 일치하지 않습니다.');
-  //     } else {
-  //       if (role === Role.ADMIN) {
-  //         const { password, ...result } = person;
-  //         return result;
-  //       } else {
-  //         if (!person.isApproved) {
-  //           throw Error('회원가입 승인 대기 중입니다.');
-  //         }
-  //         const { password, ...result } = person;
-  //         return result;
-  //       }
-  //     }
-  //   } catch (e) {
-  //     throw Error(e.message ? e.message : `${e}`);
-  //   }
-  // }
-  // // 로그인 성공 시, 유저 access_token 발행
-  // async createUserAccessToken({
-  //   email,
-  //   password,
-  // }: CreateAccessTokenInput): Promise<CreateUserAccessTokenOutput> {
-  //   try {
-  //     const user = await this.validate(email, password, Role.USER);
-  //     // 로그인 되어있는지 확인
-  //     const checkTTL = await this.redisCacheService.ttl(user.id);
-  //     if (checkTTL > 0) {
-  //       await this.redisCacheService.del(user.id);
-  //     }
-  //     // access-token : 2시간
-  //     const accessTTL = 60 * 60 * 2;
-  //     const accessTokenPayload = {
-  //       id: user.id,
-  //       email: user.email,
-  //       role: user.role,
-  //     };
-  //     const accessToken = this.jwtService.sign(accessTokenPayload, {
-  //       expiresIn: accessTTL,
-  //     });
-  //     // refresh-token : 4시간
-  //     const refreshTTL = 60 * 60 * 4;
-  //     const refreshTokenPayload = {
-  //       id: user.id,
-  //     };
-  //     const refreshToken = this.jwtService.sign(refreshTokenPayload, {
-  //       expiresIn: refreshTTL,
-  //     });
-  //     const key = `ACCESS_TOKEN=${user.id}`;
-  //     await this.redisCacheService.set(key, accessToken, accessTTL);
-  //     return {
-  //       accessToken,
-  //       refreshToken,
-  //     };
-  //   } catch (e) {
-  //     throw new HttpException(
-  //       {
-  //         message: `${e}`,
-  //         statusCode: HttpStatus.BAD_REQUEST,
-  //         error: e.message ? e.message : `${e}`,
-  //       },
-  //       HttpStatus.BAD_REQUEST,
-  //     );
-  //   }
-  // }
+
+  // id 중복 검사
+  async checkUid(uid: string) {
+    try {
+      const check = await this.prisma.user.count({ where: { uid } });
+
+      if (check > 0) {
+        throw Error('이미 존재하는 ID 입니다');
+      }
+
+      return true;
+    } catch (e) {
+      throw new HttpException(
+        {
+          message: e.message ? e.message : `${e}`,
+          statusCode: HttpStatus.BAD_REQUEST,
+          error: e.message ? e.message : `${e}`,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  // 로그인 요청 시 uid, password 대조
+  async validate(uid: string, password: string): Promise<any> {
+    try {
+      // 유저 조회
+      const person = await this.prisma.user.findUnique({
+        where: { uid },
+        rejectOnNotFound: () => new Error('존재하지 않는 유저입니다.'),
+      });
+
+      // 입력된 비밀번호를 db의 해쉬화된 비밀번호와 대조
+      const compareResult = await this.passwordService.validatePassword(
+        password,
+        person.password,
+      );
+
+      if (!compareResult) {
+        throw Error('비밀번호가 일치하지 않습니다.');
+      } else {
+        const { password, ...result } = person;
+
+        return result;
+      }
+    } catch (e) {
+      throw new HttpException(
+        {
+          message: e.message ? e.message : `${e}`,
+          statusCode: HttpStatus.BAD_REQUEST,
+          error: e.message ? e.message : `${e}`,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  // 로그인 성공 시, 유저 access_token 발행
+  async createUserAccessToken({
+    uid,
+    password,
+  }: CreateAccessTokenInput): Promise<CreateUserAccessTokenOutput> {
+    try {
+      // 회원 정보 대조
+      const user = await this.validate(uid, password);
+
+      // 로그인 되어있는지 확인
+      const checkTTL = await this.redisCacheService.ttl(user.id);
+
+      if (checkTTL > 0) {
+        await this.redisCacheService.del(user.id);
+      }
+
+      // access-token : 2시간
+      const accessTTL = 60 * 60 * 2;
+      const accessTokenPayload = {
+        uid: user.uid,
+      };
+      const accessToken = this.jwtService.sign(accessTokenPayload, {
+        expiresIn: accessTTL,
+      });
+
+      // refresh-token : 4시간
+      const refreshTTL = 60 * 60 * 4;
+      const refreshTokenPayload = {
+        uid: user.uid,
+      };
+      const refreshToken = this.jwtService.sign(refreshTokenPayload, {
+        expiresIn: refreshTTL,
+      });
+
+      const key = `ACCESS_TOKEN=${user.uid}`;
+
+      await this.redisCacheService.set(key, accessToken, accessTTL);
+
+      return {
+        accessToken,
+        refreshToken,
+      };
+    } catch (e) {
+      throw new HttpException(
+        {
+          message: e.message ? e.message : `${e}`,
+          statusCode: HttpStatus.BAD_REQUEST,
+          error: e.message ? e.message : `${e}`,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   // // 로그인 성공 시, 관리자 access_token 발행
   // async createAdminAccessToken({ email, password }: CreateAccessTokenInput) {
   //   try {
@@ -192,37 +219,24 @@ export class AuthService {
   //   }
   // }
 
-  // /* jwt 내용에 대한 결과값 */
-  // async jwtValidate(payload): Promise<any> {
-  //   try {
-  //     let person;
-  //     if (payload.role === Role.ADMIN) {
-  //       person = await this.prisma.admin.findUnique({
-  //         where: { id: payload.id },
-  //       });
-  //     } else {
-  //       person = await this.prisma.user.findUnique({
-  //         where: { id: payload.id },
-  //       });
-  //     }
-  //     if (!person) {
-  //       throw Error(
-  //         `존재하지 않는 ${
-  //           payload.role === Role.ADMIN ? '관리자' : '유저'
-  //         }입니다.`,
-  //       );
-  //     }
-  //     return person;
-  //   } catch (e) {
-  //     throw new HttpException(
-  //       {
-  //         statusCode: HttpStatus.BAD_REQUEST,
-  //         error: e.message ? e.message : `${e}`,
-  //       },
-  //       HttpStatus.BAD_REQUEST,
-  //     );
-  //   }
-  // }
+  /* jwt 내용에 대한 결과값 */
+  async jwtValidate(payload): Promise<any> {
+    try {
+      return await this.prisma.user.findUnique({
+        where: { id: payload.id },
+        rejectOnNotFound: () => new Error('존재하지 않는 유저입니다.'),
+      });
+    } catch (e) {
+      throw new HttpException(
+        {
+          message: e.message ? e.message : `${e}`,
+          statusCode: HttpStatus.BAD_REQUEST,
+          error: e.message ? e.message : `${e}`,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
   // // 이메일 인증 받았을 때
   // async receiveEmailAuth({ token }: ReceiveEmailAuthInput): Promise<boolean> {
   //   try {

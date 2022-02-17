@@ -65,42 +65,6 @@ export class WowzaService {
     return { url, headers };
   }
 
-  private setPlayers(category?: string, streamId?: string, data?: string) {
-    const hostname = 'api.cloud.wowza.com';
-    let path = '/api/v1.7/players';
-
-    if (category) {
-      switch (category) {
-        case 'getAllPlayerUrls':
-          path = path + '/' + streamId + '/' + data;
-          break;
-        default:
-          break;
-      }
-    }
-
-    const wscApiKey = process.env.WOWZA_API_KEY;
-    const wscAccessKey = process.env.WOWZA_ACCESS_KEY;
-    const timestamp = Math.round(new Date().getTime() / 1000);
-    const hmacData = timestamp + ':' + path + ':' + wscApiKey;
-
-    const signature = crypto
-      .createHmac('sha256', wscApiKey)
-      .update(hmacData)
-      .digest('hex');
-
-    const headers = {
-      'wsc-access-key': wscAccessKey,
-      'wsc-timestamp': timestamp,
-      'wsc-signature': signature,
-      'Content-Type': 'application/json',
-    };
-
-    const url = 'https://' + hostname + path;
-
-    return { url, headers };
-  }
-
   private setTranscoder(
     category?: string,
     transcoderId?: string,
