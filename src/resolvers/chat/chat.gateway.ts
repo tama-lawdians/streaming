@@ -20,17 +20,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   public handleConnection(client) {
     console.log('connected', client.id);
+    console.log(client.data);
     client.leave(client.id);
-    client.data.roomId = `room:lobby`;
-    client.join('room:lobby');
+    // client.data.roomId = `room:lobby`;
+    // console.log(client);
+    // client.join('room:lobby');
   }
 
   public handleDisconnect(client): void {
     const { roomId } = client.data;
-    if (
-      roomId != 'room:lobby' &&
-      !this.server.sockets.adapter.rooms.get(roomId)
-    ) {
+    console.log(this.server.sockets.adapter.rooms);
+    if (!this.server.sockets.adapter.rooms.get(roomId)) {
       this.chatService.deleteChatRoom(roomId);
       this.server.emit('getChatRoomList', this.chatService.getChatRoomList());
     }
@@ -44,13 +44,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (client.rooms.has(roomId)) {
       return;
     }
-    //이전 방이 만약 나 혼자있던 방이면 제거
-    if (
-      client.data.roomId != 'room:lobby' &&
-      this.server.sockets.adapter.rooms.get(client.data.roomId).size == 1
-    ) {
-      this.chatService.deleteChatRoom(client.data.roomId);
-    }
+    // //이전 방이 만약 나 혼자있던 방이면 제거
+    // if (
+    //   client.data.roomId != 'room:lobby' &&
+    //   this.server.sockets.adapter.rooms.get(client.data.roomId).size == 1
+    // ) {
+    //   this.chatService.deleteChatRoom(client.data.roomId);
+    // }
     this.chatService.enterChatRoom(client, roomId);
     return {
       roomId: roomId,
@@ -58,20 +58,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     };
   }
 
-  @SubscribeMessage('message') // 'message' 라는 이름의 event 를 받으면 handleMessage 함수 실행
-  handleMessage(
-    @MessageBody() data: string,
-    // @ConnectedSocket() client: Socket,
-  ): void {
-    console.log(data);
-    this.server.emit('getMessage', data);
-  }
-
   //메시지가 전송되면 모든 유저에게 메시지 전송
   @SubscribeMessage('sendMessage')
-  sendMessage(client: Socket, message: string): void {
-    const { roomId } = client.data;
-    client.to(roomId).emit('getMessage', {
+  sendMessage(
+    @MessageBody() message: string,
+    @ConnectedSocket() client: Socket,
+  ): void {
+    // const { roomId } = client.data;
+    this.server.emit('getMessage', {
       id: client.id,
       nickname: client.data.nickname,
       message,
@@ -86,6 +80,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
+    console.log('client.data', client.data);
+
     client.data.nickname = data.nickname
       ? data.nickname
       : '낯선사람' + client.id;
@@ -94,34 +90,37 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     return {
       nickname: client.data.nickname,
-      room: {
-        roomId: 'room:lobby',
-        roomName: '로비',
-      },
     };
   }
 
   //채팅방 목록 가져오기
   @SubscribeMessage('getChatRoomList')
-  getChatRoomList(client: Socket, payload: any) {
-    client.emit('getChatRoomList', this.chatService.getChatRoomList());
+  getChatRoomList() {
+    console.log('here');
+    const rooms = this.chatService.getChatRoomList();
+
+    console.log('getChatRoomList', rooms);
+    return rooms;
   }
 
   //채팅방 생성하기
   @SubscribeMessage('createChatRoom')
   createChatRoom(client: Socket, roomName: string) {
-    //이전 방이 만약 나 혼자있던 방이면 제거
-    if (
-      client.data.roomId != 'room:lobby' &&
-      this.server.sockets.adapter.rooms.get(client.data.roomId).size == 1
-    ) {
-      this.chatService.deleteChatRoom(client.data.roomId);
-    }
+    // //이전 방이 만약 나 혼자있던 방이면 제거
+    // console.log(this.server.sockets.adapter.sids.get(client.data.roomId).size);
+    // console.log(this.server.sockets.adapter.rooms.get(client.data.roomId));
+
+    // if (this.server.sockets.adapter.rooms.get(client.data.roomId).size === 1) {
+    //   this.chatService.deleteChatRoom(client.data.roomId);
+    // }
 
     this.chatService.createChatRoom(client, roomName);
+    console.log(this.server.sockets.adapter.rooms);
+    console.log(client.data.roomId);
+
     return {
       roomId: client.data.roomId,
-      roomName: this.chatService.getChatRoom(client.data.roomId).roomName,
+      roomName,
     };
   }
 }

@@ -7,37 +7,32 @@ import { chatRoomListDTO } from './dto/chat.dto';
 
 @Injectable()
 export class ChatService {
-  private chatRoomList: Record<string, chatRoomListDTO>;
+  private chatRoomList: chatRoomListDTO[];
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly redisCacheService: RedisCacheService,
   ) {
-    this.chatRoomList = {
-      'room:lobby': {
-        roomId: 'room:lobby',
-        roomName: '로비',
-        cheifId: null,
-      },
-    };
+    this.chatRoomList = [];
   }
 
   createChatRoom(client: Socket, roomName: string) {
     const roomId = `room:${uuidv4()}`;
-    const nickname: string = client.data.nickname;
-    this.chatRoomList[roomId] = {
+
+    this.chatRoomList.push({
       roomId,
       cheifId: client.id,
       roomName,
-    };
+      members: [{ nickname: client.data.nickname }],
+    });
     client.data.roomId = roomId;
     client.rooms.clear();
     client.join(roomId);
-    client.emit('getMessage', {
-      id: null,
-      nickname: '안내',
-      message: '"' + nickname + '"님이 "' + roomName + '"방을 생성하였습니다.',
-    });
+    // client.emit('getMessage', {
+    //   id: null,
+    //   nickname: '안내',
+    //   message: '"' + nickname + '"님이 "' + roomName + '"방을 생성하였습니다.',
+    // });
   }
 
   enterChatRoom(client: Socket, roomId: string) {
@@ -46,6 +41,11 @@ export class ChatService {
     client.join(roomId);
     const { nickname } = client.data;
     const { roomName } = this.getChatRoom(roomId);
+    this.chatRoomList.map((item) => {
+      if (item.roomId === roomId) {
+        item.members.push({ nickname });
+      }
+    });
     client.to(roomId).emit('getMessage', {
       id: null,
       nickname: '안내',
@@ -54,10 +54,17 @@ export class ChatService {
   }
 
   exitChatRoom(client: Socket, roomId: string) {
-    client.data.roomId = `room:lobby`;
     client.rooms.clear();
-    client.join(`room:lobby`);
     const { nickname } = client.data;
+
+    this.chatRoomList.map((item) => {
+      if (item.roomId === roomId) {
+        item.members = item.members.filter(
+          (member) => member.nickname !== nickname,
+        );
+      }
+    });
+
     client.to(roomId).emit('getMessage', {
       id: null,
       nickname: '안내',
@@ -66,14 +73,18 @@ export class ChatService {
   }
 
   getChatRoom(roomId: string): chatRoomListDTO {
-    return this.chatRoomList[roomId];
+    return this.chatRoomList.find((item) => item.roomId === roomId);
   }
 
-  getChatRoomList(): Record<string, chatRoomListDTO> {
+  getChatRoomList(): chatRoomListDTO[] {
+    console.log('service');
+    console.dir(this.chatRoomList, { depth: null });
     return this.chatRoomList;
   }
 
   deleteChatRoom(roomId: string) {
-    delete this.chatRoomList[roomId];
+    this.chatRoomList = this.chatRoomList.filter(
+      (item) => item.roomId !== roomId,
+    );
   }
 }
