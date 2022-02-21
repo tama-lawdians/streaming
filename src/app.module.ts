@@ -1,14 +1,16 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { StreamingModule } from './resolvers/streaming/streaming.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { GraphQLError, GraphQLFormattedError } from 'graphql';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { WowzaModule } from './resolvers/wowza/wowza.module';
-import { StreamGateway } from './gateways/stream.gateway';
+import { ChatGateway } from './resolvers/chat/chat.gateway';
 import { UserModule } from './resolvers/user/user.module';
+import { ChatModule } from './resolvers/chat/chat.module';
+import { ChatService } from './resolvers/chat/chat.service';
+import { PrismaService } from './services/prisma.service';
 
 @Module({
   imports: [
@@ -40,12 +42,12 @@ import { UserModule } from './resolvers/user/user.module';
         },
       }),
     }),
-    StreamingModule,
     AuthModule,
     WowzaModule,
     UserModule,
+    ChatModule,
   ],
   controllers: [AppController],
-  providers: [AppService, StreamGateway],
+  providers: [AppService, ChatGateway, ChatService, PrismaService],
 })
 export class AppModule {}

@@ -7,13 +7,13 @@ import { CreateUserAccessTokenOutput } from './outputs/create-user-access-token.
 @Resolver()
 export class AuthResolver {
   constructor(private authService: AuthService) {}
-  // // 유저 엑세스 토큰 생성
-  // @Query(() => CreateUserAccessTokenOutput)
-  // async createUserAccessToken(
-  //   @Args() data: CreateAccessTokenInput,
-  // ): Promise<CreateUserAccessTokenOutput> {
-  //   return this.authService.createUserAccessToken(data);
-  // }
+  // 유저 엑세스 토큰 생성
+  @Query(() => CreateUserAccessTokenOutput, { description: '유저 토큰 생성' })
+  async createUserAccessToken(
+    @Args() data: CreateAccessTokenInput,
+  ): Promise<CreateUserAccessTokenOutput> {
+    return this.authService.createUserAccessToken(data);
+  }
   // // 관리자 엑세스 토큰 생성
   // @Query(() => CreateAdminAccessTokenOutput)
   // async createAdminAccessToken(

@@ -6,7 +6,7 @@ export class RedisCacheService {
   constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
 
   // cache server에서 key에 해당하는 value를 가져옵니다.
-  async get(key: string): Promise<string> {
+  async get(key: string) {
     return await this.cacheManager.get(key);
   }
 

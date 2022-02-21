@@ -1,15 +1,20 @@
 import { HttpService } from '@nestjs/axios';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import * as crypto from 'crypto';
+import { RedisCacheService } from 'src/cache/redisCache.service';
 import { CreateLiveStreamArgs } from './args/create-live-stream.args';
 import { CreateTranscoderArgs } from './args/create-transcoder.args';
 import { StreamIdArgs } from './args/stream-id.args';
+import { TranscoderIdArgs } from './args/transcoder-id.args';
 import { UpdateLiveStreamByIdArgs } from './args/update-live-stream-by-id.args';
 import { UpdateTranscoderByIdArgs } from './args/update-transcoder-by-id.args';
 
 @Injectable()
 export class WowzaService {
-  constructor(private httpService: HttpService) {}
+  constructor(
+    private httpService: HttpService,
+    private readonly redisCacheService: RedisCacheService,
+  ) {}
 
   private setLiveStream(category?: string, streamId?: string, data?: string) {
     const hostname = 'api.cloud.wowza.com';
@@ -75,26 +80,11 @@ export class WowzaService {
 
     if (category) {
       switch (category) {
-        case 'getLiveStreamById':
+        case 'getTranscoderById':
           path = path + '/' + transcoderId;
           break;
         case 'updateTranscoderById':
           path = path + '/' + transcoderId;
-          break;
-        case 'startLiveStream':
-          path = path + '/' + transcoderId + '/' + data;
-          break;
-        case 'stopLiveStream':
-          path = path + '/' + transcoderId + '/' + data;
-          break;
-        case 'fetchThumbnail':
-          path = path + '/' + transcoderId + '/' + data;
-          break;
-        case 'fetchState':
-          path = path + '/' + transcoderId + '/' + data;
-          break;
-        case 'fetchMetrics':
-          path = path + '/' + transcoderId + '/' + data;
           break;
         default:
           break;
@@ -140,6 +130,7 @@ export class WowzaService {
               encoder: 'other_webrtc',
               name,
               transcoder_type: 'transcoded',
+              low_latency: true,
             },
           },
           {
@@ -157,6 +148,15 @@ export class WowzaService {
           break;
         }
       }
+
+      const chatKey = `CHATTING_ROOM=${data.live_stream.id}`;
+
+      const chatValue = { users: [], chat: [], totalCount: 1 };
+
+      // 1시간
+      const chatTTL = 60 * 60;
+
+      await this.redisCacheService.set(chatKey, chatValue, chatTTL);
 
       return {
         sdp_url: data.live_stream.source_connection_information.sdp_url,
@@ -254,6 +254,34 @@ export class WowzaService {
     }
   }
 
+  async getAllTranscoders() {
+    try {
+      const { url, headers } = this.setTranscoder();
+
+      // Set request parameters
+      const { data } = await this.httpService
+        .get(url, {
+          headers,
+        })
+        .toPromise();
+
+      const transcoders = data.transcoders;
+
+      const totalCount = transcoders.length;
+
+      return { transcoders, totalCount };
+    } catch (e) {
+      throw new HttpException(
+        {
+          message: e.message ? e.message : `${e}`,
+          statusCode: HttpStatus.BAD_REQUEST,
+          error: e.message ? e.message : `${e}`,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   async getLiveStreamById({ streamId }: StreamIdArgs) {
     try {
       const { url, headers } = this.setLiveStream(
@@ -276,6 +304,41 @@ export class WowzaService {
         created_at: data.live_stream.created_at,
         updated_at: data.live_stream.updated_at,
       };
+    } catch (e) {
+      throw new HttpException(
+        {
+          message: e.message ? e.message : `${e}`,
+          statusCode: HttpStatus.BAD_REQUEST,
+          error: e.message ? e.message : `${e}`,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  async getTranscoderById({ transcoderId }: TranscoderIdArgs) {
+    try {
+      const { url, headers } = this.setTranscoder(
+        'getTranscoderById',
+        transcoderId,
+      );
+
+      // Set request parameters
+      const { data } = await this.httpService
+        .get(url, {
+          headers,
+        })
+        .toPromise();
+
+      console.dir(data, { depth: null });
+
+      return true;
+      // return {
+      //   name: data.live_stream.name,
+      //   player_hls_playback_url: data.live_stream.player_hls_playback_url,
+      //   created_at: data.live_stream.created_at,
+      //   updated_at: data.live_stream.updated_at,
+      // };
     } catch (e) {
       throw new HttpException(
         {
@@ -354,12 +417,6 @@ export class WowzaService {
       console.log(data);
 
       return true;
-      //   return {
-      //     name: data.live_stream.name,
-      //     player_hls_playback_url: data.live_stream.player_hls_playback_url,
-      //     created_at: data.live_stream.created_at,
-      //     updated_at: data.live_stream.updated_at,
-      //   };
     } catch (e) {
       console.log(e.response.data);
       throw new HttpException(

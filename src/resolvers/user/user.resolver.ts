@@ -6,7 +6,8 @@ import { UserService } from './user.service';
 export class UserResolver {
   constructor(private readonly userService: UserService) {}
 
-  @Mutation(() => Boolean)
+  // 유저 생성
+  @Mutation(() => Boolean, { description: '유저 생성' })
   createUser(@Args() data: CreateUserArgs) {
     return this.userService.createUser(data);
   }

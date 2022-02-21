@@ -2,6 +2,11 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type CreateUserAccessTokenOutput {
+  accessToken: String!
+  refreshToken: String!
+}
+
 type CreateLiveStreamOutput {
   sdp_url: String!
   application_name: String!
@@ -24,6 +29,19 @@ type LiveStreams {
   updated_at: String!
 }
 
+type GetAllTranscodersOutput {
+  transcoders: [Transcoders!]!
+  totalCount: Float!
+}
+
+type Transcoders {
+  id: String!
+  name: String!
+  workflow: String!
+  created_at: String!
+  updated_at: String!
+}
+
 type GetLiveStreamByIdOutput {
   name: String!
   player_hls_playback_url: String!
@@ -39,20 +57,34 @@ type UpdateLiveStreamByIdOutput {
 }
 
 type Query {
-  sayHi: String!
+  """유저 토큰 생성"""
+  createUserAccessToken(uid: String!, password: String!): CreateUserAccessTokenOutput!
+
+  """스트리밍 목록 조회"""
   getAllLiveStream: GetAllLiveStreamOutput!
+
+  """트랜스코더 목록 조회"""
+  getAllTranscoders: GetAllTranscodersOutput!
+
+  """특정 스트리밍 조회"""
   getLiveStreamById(streamId: String!): GetLiveStreamByIdOutput!
+
+  """특정 transcoder 조회"""
+  getTranscoderById(transcoderId: String!): Boolean!
   fetchThumbnail(streamId: String!): FetchThumbnailOutput!
   fetchState(streamId: String!): String!
   fetchMetrics(streamId: String!): Boolean!
 }
 
 type Mutation {
+  """스트리밍 생성 및 시작"""
   createLiveStream(name: String!): CreateLiveStreamOutput!
-  createTranscoder(name: String!): Boolean!
+
+  """스트리밍 정보 수정"""
   updateLiveStreamById(streamId: String!, name: String!): UpdateLiveStreamByIdOutput!
-  updateTranscoderById(transcoderId: String!, name: String!): Boolean!
   stopLiveStream(streamId: String!): Boolean!
+
+  """유저 생성"""
   createUser(
     """유저 ID"""
     uid: String!
